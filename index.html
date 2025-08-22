@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="th" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XCOIN Top Up</title>
+    
+    <!-- External Libraries: These are loaded normally -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+    <!-- The <style> block has been removed from here and will be injected by JavaScript -->
+</head>
+<body>
+    <!-- 
+      =================================================================
+      MAIN APPLICATION WRAPPER
+      =================================================================
+      The entire app is wrapped in this div with a unique ID.
+      This is the key to scoping the CSS and preventing conflicts.
+    -->
+    <div id="xcoin-payment-app">
+        <div class="container mx-auto p-4 max-w-md">
+            <div class="text-center my-6">
+                <h1 class="text-3xl font-bold text-xcoin-red">XCOIN</h1>
+                <p class="themed-text-secondary text-lg">เติมคอยน์สำหรับ Bare.live</p>
+            </div>
+
+            <div class="card rounded-2xl shadow-lg p-6 space-y-6">
+                <!-- 1. Amount Selection -->
+                <div>
+                    <h2 class="xcoin-heading themed-text mb-3">1. เลือกจำนวนเงิน</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <button class="amount-card themed-border border-2 rounded-lg p-4 text-center transition" data-amount="100"> <span class="font-bold text-xl themed-text">100</span> <span class="themed-text-secondary">บาท</span> </button>
+                        <button class="amount-card themed-border border-2 rounded-lg p-4 text-center transition" data-amount="300"> <span class="font-bold text-xl themed-text">300</span> <span class="themed-text-secondary">บาท</span> </button>
+                        <button class="amount-card themed-border border-2 rounded-lg p-4 text-center transition" data-amount="500"> <span class="font-bold text-xl themed-text">500</span> <span class="themed-text-secondary">บาท</span> </button>
+                        <button class="amount-card themed-border border-2 rounded-lg p-4 text-center transition" data-amount="1000"> <span class="font-bold text-xl themed-text">1,000</span> <span class="themed-text-secondary">บาท</span> </button>
+                    </div>
+                    <div class="relative">
+                        <input id="custom-amount" type="number" min="100" placeholder="ระบุจำนวนเงิน (ขั้นต่ำ 100)" class="w-full input-bg themed-text themed-border border-2 rounded-lg p-3 text-center font-bold text-lg focus:ring-2 focus:ring-xcoin-red focus:border-xcoin-red outline-none">
+                        <div id="stepper-controls" class="hidden absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <button id="stepper-down" class="themed-text w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">-</button>
+                            <button id="stepper-up" class="themed-text w-8 h-8 flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Payment Method -->
+                <div>
+                    <h2 class="xcoin-heading themed-text mb-3">2. เลือกช่องทางชำระเงิน</h2>
+                    <div class="space-y-3">
+                        <button class="payment-method w-full themed-border border-2 rounded-lg p-3 flex items-center justify-between transition" data-method="qr"> <span class="font-semibold themed-text">QR PromptPay</span> <i class="fas fa-qrcode text-2xl themed-text-secondary"></i> </button>
+                        <button class="payment-method w-full themed-border border-2 rounded-lg p-3 flex items-center justify-between transition" data-method="bank_transfer"> <div class="text-left"> <span class="font-semibold themed-text">โอนเงินผ่านธนาคาร</span> <p class="text-xs themed-text-secondary">ธ.ไทยพาณิชย์</p> </div> <i class="fas fa-university text-2xl themed-text-secondary"></i> </button>
+                        <button id="credit-card-btn" class="payment-method w-full themed-border border-2 rounded-lg p-3 flex items-center justify-between transition" data-method="credit_card"> <div> <span class="font-semibold themed-text">บัตรเครดิต / เดบิต</span> <p id="cc-condition" class="text-xs themed-text-secondary h-4"></p> </div> <i class="fas fa-credit-card text-2xl themed-text-secondary"></i> </button>
+                    </div>
+                </div>
+
+                <!-- 3. Summary -->
+                <div>
+                    <h2 class="xcoin-heading themed-text mb-3">สรุปรายการ</h2>
+                    <div class="themed-bg-secondary rounded-lg p-4 space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="themed-text-secondary">ยอดเติมเงิน</span><span id="summary-amount" class="font-semibold themed-text">0 บาท</span></div>
+                        <div id="fee-row" class="flex justify-between hidden"><span class="themed-text-secondary">ค่าธรรมเนียม (3%)</span><span id="summary-fee" class="font-semibold themed-text">0 บาท</span></div>
+                        <hr id="summary-hr" class="themed-border my-2 hidden">
+                        <div class="flex justify-between text-base"><span class="themed-text-secondary">ยอดที่ต้องชำระ</span><span id="summary-total" class="font-bold text-xcoin-red text-lg">0 บาท</span></div>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <button id="confirm-btn" class="w-full bg-xcoin-red hover:bg-xcoin-red-dark text-white font-bold py-4 rounded-lg transition text-lg shadow-lg disabled:opacity-60 disabled:cursor-not-allowed" disabled>กรุณาเลือกจำนวนเงิน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+      =================================================================
+      MODALS
+      =================================================================
+    -->
+    <div id="qr-modal" class="xcoin-modal hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4">
+        <div class="modal-content card rounded-2xl shadow-2xl p-6 max-w-sm w-full relative transform scale-95">
+            <button class="close-modal-btn absolute -top-3 -right-3 card rounded-full p-1 shadow-lg themed-text-secondary hover:text-xcoin-red transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <div class="text-center">
+                <h3 class="text-xl font-bold themed-text mb-2">สแกนเพื่อชำระเงิน</h3>
+                <div id="qrcode" class="flex justify-center p-4 bg-white rounded-lg"></div>
+                <div class="my-4 text-left space-y-1">
+                    <p class="themed-text-secondary text-sm">ชื่อบริษัท: <span class="font-semibold themed-text">บริษัท บิส บัดดี้ จำกัด</span></p>
+                    <p class="themed-text-secondary text-sm">เลขที่พร้อมเพย์: <span class="font-semibold themed-text">0105562033673</span></p>
+                    <p class="themed-text-secondary text-sm">จำนวนเงิน: <span id="qr-amount" class="font-semibold themed-text"></span></p>
+                </div>
+                <hr class="themed-border my-4">
+                <p class="themed-text-secondary text-sm mb-4">เมื่อเสร็จสิ้น กรุณาส่งสลิปและแจ้ง ID มาที่</p>
+                <a href="https://line.me/R/ti/p/@XCOIN" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                    <i class="fab fa-line text-2xl"></i> <span>แจ้งโอนที่ LINE @XCOIN</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="bank-transfer-modal" class="xcoin-modal hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4">
+        <div class="modal-content card rounded-2xl shadow-2xl p-6 max-w-sm w-full relative transform scale-95">
+            <button class="close-modal-btn absolute -top-3 -right-3 card rounded-full p-1 shadow-lg themed-text-secondary hover:text-xcoin-red transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <div class="text-center">
+                <h3 class="text-xl font-bold themed-text mb-4">โอนเงินผ่านธนาคาร</h3>
+                <div class="themed-bg-secondary rounded-lg p-4 mb-4">
+                    <p class="themed-text-secondary">ธนาคารไทยพาณิชย์</p>
+                    <div class="flex items-center justify-center gap-4 my-2">
+                        <p id="scb-account-number" class="text-2xl font-bold themed-text tracking-widest">093-250-2877</p>
+                        <button id="modal-copy-btn" class="themed-text p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"><i class="far fa-copy text-xl"></i></button>
+                    </div>
+                    <p id="modal-copy-feedback" class="text-xs text-green-500 h-4"></p>
+                </div>
+                <p class="themed-text-secondary text-sm mb-4">ทำรายการโอนผ่านแอปพลิเคชันธนาคารของคุณ<br>เมื่อเสร็จสิ้น กรุณาส่งสลิปและแจ้ง ID มาที่</p>
+                <a href="https://line.me/R/ti/p/@XCOIN" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2">
+                    <i class="fab fa-line text-2xl"></i> <span>แจ้งโอนที่ LINE @XCOIN</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /* * =================================================================
+     * DYNAMIC STYLE INJECTION
+     * =================================================================
+     * This function creates a <style> tag and injects all necessary CSS
+     * into the document's <head>. This is more robust than an inline
+     * <style> block, which can be stripped by CMS environments.
+     */
+    function injectStyles() {
+        const css = `
+            :root {
+                --xcoin-red: #D32F2F;
+                --xcoin-red-dark: #b71c1c;
+            }
+            html.light {
+                --bg: #f3f4f6; --text-primary: #111827; --text-secondary: #6b7280;
+                --card: #ffffff; --border: #e5e7eb; --input-bg: #f9fafb;
+            }
+            html.dark {
+                --bg: #0b0d10; --text-primary: #e5e7eb; --text-secondary: #9ca3af;
+                --card: #151d; --border: #374151; --input-bg: #1f2937;
+            }
+            #xcoin-payment-app {
+                font-family: 'Sarabun', 'Inter', sans-serif;
+                background-color: var(--bg);
+                color: var(--text-primary);
+                transition: background-color 0.3s ease, color 0.3s ease;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+            #xcoin-payment-app *, #xcoin-payment-app *::before, #xcoin-payment-app *::after {
+                box-sizing: border-box;
+            }
+            #xcoin-payment-app .card { background-color: var(--card); }
+            #xcoin-payment-app .themed-border { border-color: var(--border); }
+            #xcoin-payment-app .themed-text { color: var(--text-primary); }
+            #xcoin-payment-app .themed-text-secondary { color: var(--text-secondary); }
+            #xcoin-payment-app .input-bg { background-color: var(--input-bg); }
+            #xcoin-payment-app .themed-bg-secondary { background-color: var(--input-bg); }
+            #xcoin-payment-app .bg-xcoin-red { background-color: var(--xcoin-red); }
+            #xcoin-payment-app .hover\\:bg-xcoin-red-dark:hover { background-color: var(--xcoin-red-dark); }
+            #xcoin-payment-app .ring-xcoin-red { --tw-ring-color: var(--xcoin-red); }
+            #xcoin-payment-app .border-xcoin-red { border-color: var(--xcoin-red); }
+            #xcoin-payment-app .text-xcoin-red { color: var(--xcoin-red); }
+            #xcoin-payment-app .amount-card.selected,
+            #xcoin-payment-app .payment-method.selected {
+                border-color: var(--xcoin-red) !important;
+                box-shadow: 0 0 0 2px var(--xcoin-red) !important;
+            }
+            .xcoin-modal {
+                position: fixed !important; inset: 0 !important; opacity: 0;
+                transition: opacity 0.3s ease;
+                z-index: 2147483647 !important;
+            }
+            .xcoin-modal .modal-content {
+                transition: transform 0.3s ease;
+                background-color: var(--card) !important;
+            }
+            body.x-modal-open { overflow: hidden !important; }
+            #xcoin-payment-app input[type=number]::-webkit-inner-spin-button,
+            #xcoin-payment-app input[type=number]::-webkit-outer-spin-button {
+                -webkit-appearance: none; margin: 0;
+            }
+            #xcoin-payment-app input[type=number] { -moz-appearance: textfield; }
+            #xcoin-payment-app .xcoin-heading { font-size: 18px !important; font-weight: 600 !important; }
+        `;
+        const styleElement = document.createElement('style');
+        styleElement.type = 'text/css';
+        styleElement.innerHTML = css.replace(/\s\s+/g, ' ').trim(); // Minify CSS slightly
+        document.head.appendChild(styleElement);
+    }
+
+    /* * =================================================================
+     * MODAL HELPER SCRIPT
+     * =================================================================
+     */
+    (function () {
+        function ready(fn) {
+            if (document.readyState !== 'loading') fn();
+            else document.addEventListener('DOMContentLoaded', fn);
+        }
+
+        ready(function() {
+            const qrModal = document.getElementById('qr-modal');
+            const bankModal = document.getElementById('bank-transfer-modal');
+
+            if (qrModal && qrModal.parentNode !== document.body) document.body.appendChild(qrModal);
+            if (bankModal && bankModal.parentNode !== document.body) document.body.appendChild(bankModal);
+
+            function addBodyLock() { document.body.classList.add('x-modal-open'); }
+            function removeBodyLock() { document.body.classList.remove('x-modal-open'); }
+
+            window.__xShowModal = function(modal) {
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    const mc = modal.querySelector('.modal-content');
+                    if (mc) mc.classList.remove('scale-95');
+                }, 10);
+                addBodyLock();
+            };
+
+            window.__xHideModal = function(modal) {
+                if (!modal) return;
+                modal.classList.add('opacity-0');
+                const mc = modal.querySelector('.modal-content');
+                if (mc) mc.classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    removeBodyLock();
+                }, 300);
+            };
+        });
+    })();
+
+    /* * =================================================================
+     * MAIN APPLICATION LOGIC
+     * =================================================================
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+        // Inject styles as the first step
+        injectStyles();
+
+        // --- STATE MANAGEMENT ---
+        const state = {
+            amount: 0, paymentMethod: null, fee: 0, total: 0,
+            creditCardMin: 1000, customAmountMin: 100,
+            promptPayId: '0105562033673', creditCardBaseProductId: 164
+        };
+
+        // --- DOM ELEMENT SELECTORS ---
+        const appElement = document.getElementById('xcoin-payment-app');
+        if (!appElement) return console.error("XCOIN App container not found!");
+        
+        const amountCards = appElement.querySelectorAll('.amount-card');
+        const customAmountInput = appElement.querySelector('#custom-amount');
+        const paymentMethods = appElement.querySelectorAll('.payment-method');
+        const ccConditionText = appElement.querySelector('#cc-condition');
+        const summaryAmountEl = appElement.querySelector('#summary-amount');
+        const summaryFeeEl = appElement.querySelector('#summary-fee');
+        const feeRowEl = appElement.querySelector('#fee-row');
+        const summaryHr = appElement.querySelector('#summary-hr');
+        const summaryTotalEl = appElement.querySelector('#summary-total');
+        const confirmBtn = appElement.querySelector('#confirm-btn');
+        const stepperControls = appElement.querySelector('#stepper-controls');
+        const stepperUp = appElement.querySelector('#stepper-up');
+        const stepperDown = appElement.querySelector('#stepper-down');
+        
+        const qrModal = document.getElementById('qr-modal');
+        const bankTransferModal = document.getElementById('bank-transfer-modal');
+        const qrCodeEl = document.getElementById('qrcode');
+        const qrAmountEl = document.getElementById('qr-amount');
+        const modalCopyBtn = document.getElementById('modal-copy-btn');
+        const modalCopyFeedback = document.getElementById('modal-copy-feedback');
+        const accountNumberEl = document.getElementById('scb-account-number');
+
+        let qrcodeInstance = null;
+        
+        // --- FUNCTIONS ---
+        function ensureQRCodeInstance() {
+            if (!qrcodeInstance && window.QRCode) {
+                qrcodeInstance = new QRCode(qrCodeEl, { width: 200, height: 200, colorDark: "#111827", colorLight: "#ffffff" });
+            }
+        }
+
+        const generatePromptPayQR = (amount) => {
+            ensureQRCodeInstance();
+            if (!qrcodeInstance) return console.error("QRCode library not ready.");
+
+            const target = state.promptPayId;
+            const amountStr = amount.toFixed(2);
+            const payloadData = [
+                '000201', '010212', '2937' + '0016A000000677010111' + '0213' + target,
+                '5303764', '54' + amountStr.length.toString().padStart(2, '0') + amountStr,
+                '5802TH', '6304'
+            ].join('');
+
+            let crc = 0xFFFF;
+            for (let c = 0; c < payloadData.length; c++) {
+                crc ^= payloadData.charCodeAt(c) << 8;
+                for (let i = 0; i < 8; i++) {
+                    if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+                    else crc = crc << 1;
+                }
+            }
+            const crc16 = ("0000" + (crc & 0xFFFF).toString(16).toUpperCase()).slice(-4);
+            qrcodeInstance.makeCode(payloadData + crc16);
+        };
+
+        const updateUI = () => {
+            const isCreditCard = state.paymentMethod === 'credit_card';
+            
+            stepperControls.classList.toggle('hidden', !isCreditCard);
+            customAmountInput.setAttribute('step', isCreditCard ? '1000' : '1');
+            customAmountInput.setAttribute('min', isCreditCard ? state.creditCardMin : state.customAmountMin);
+
+            amountCards.forEach(c => c.classList.toggle('selected', parseInt(c.dataset.amount) === state.amount && state.amount > 0));
+            paymentMethods.forEach(b => b.classList.toggle('selected', b.dataset.method === state.paymentMethod));
+            
+            if (document.activeElement !== customAmountInput) {
+                customAmountInput.value = state.amount > 0 ? state.amount : '';
+            }
+
+            const isCCSelectionValid = state.amount >= state.creditCardMin && state.amount % 1000 === 0;
+            let ccHelperText = '';
+            if (state.amount > 0 && state.amount < state.creditCardMin) {
+                ccHelperText = `(ขั้นต่ำ ${state.creditCardMin.toLocaleString()} บาท)`;
+            } else if (isCreditCard && !isCCSelectionValid) {
+                ccHelperText = '(ยอดเงินไม่ถูกต้อง)';
+            }
+            ccConditionText.textContent = ccHelperText;
+            
+            if (!isCCSelectionValid && isCreditCard) {
+                state.paymentMethod = null;
+                paymentMethods.forEach(b => b.classList.remove('selected'));
+            }
+
+            state.fee = isCreditCard ? Math.ceil(state.amount * 0.03) : 0;
+            state.total = state.amount + state.fee;
+
+            summaryAmountEl.textContent = `${(state.amount || 0).toLocaleString()} บาท`;
+            feeRowEl.classList.toggle('hidden', !isCreditCard || state.fee <= 0);
+            summaryHr.classList.toggle('hidden', !isCreditCard || state.fee <= 0);
+            summaryFeeEl.textContent = `${(state.fee || 0).toLocaleString()} บาท`;
+            summaryTotalEl.textContent = `${(state.total || 0).toLocaleString()} บาท`;
+
+            const canConfirm = state.amount >= state.customAmountMin && state.paymentMethod;
+            confirmBtn.disabled = !canConfirm;
+
+            if (canConfirm) {
+                confirmBtn.textContent = `ดำเนินการชำระเงิน ${state.total.toLocaleString()} บาท`;
+            } else {
+                let msg = 'กรุณาเลือกจำนวนเงิน';
+                if (state.amount > 0 && state.amount < state.customAmountMin) {
+                    msg = `ยอดเติมเงินขั้นต่ำ ${state.customAmountMin} บาท`;
+                } else if (state.amount >= state.customAmountMin && !state.paymentMethod) {
+                    msg = 'กรุณาเลือกช่องทางชำระเงิน';
+                }
+                confirmBtn.textContent = msg;
+            }
+        };
+
+        const copyToClipboard = (text, feedbackEl) => {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                if (feedbackEl) {
+                    feedbackEl.textContent = 'คัดลอกแล้ว!';
+                    setTimeout(() => { feedbackEl.textContent = ''; }, 2000);
+                }
+            } catch (err) { console.error('Unable to copy to clipboard', err); }
+            document.body.removeChild(textArea);
+        };
+
+        // --- EVENT LISTENERS ---
+        amountCards.forEach(card => card.addEventListener('click', () => {
+            state.amount = parseInt(card.dataset.amount);
+            customAmountInput.value = '';
+            updateUI();
+        }));
+
+        customAmountInput.addEventListener('input', e => {
+            state.amount = parseInt(e.target.value) || 0;
+            amountCards.forEach(c => c.classList.remove('selected'));
+            updateUI();
+        });
+
+        paymentMethods.forEach(button => button.addEventListener('click', () => {
+            if (!button.disabled) {
+                state.paymentMethod = button.dataset.method;
+                if (state.paymentMethod === 'credit_card' && (state.amount < state.creditCardMin)) {
+                    state.amount = state.creditCardMin;
+                }
+                updateUI();
+            }
+        }));
+
+        stepperUp.addEventListener('click', () => {
+            state.amount = Math.min(100000, (state.amount || 0) + 1000);
+            updateUI();
+        });
+        
+        stepperDown.addEventListener('click', () => {
+            state.amount = Math.max(state.creditCardMin, (state.amount || 0) - 1000);
+            updateUI();
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            if (confirmBtn.disabled) return;
+            switch (state.paymentMethod) {
+                case 'qr':
+                    generatePromptPayQR(state.amount);
+                    qrAmountEl.textContent = `${state.amount.toLocaleString()} บาท`;
+                    window.__xShowModal(qrModal);
+                    break;
+                case 'bank_transfer':
+                    window.__xShowModal(bankTransferModal);
+                    break;
+                case 'credit_card':
+                    const quantity = state.amount / 1000;
+                    if (quantity > 0 && Number.isInteger(quantity)) {
+                        const checkoutUrl = `${window.location.origin}/xcoin/checkout-2/?add-to-cart=${state.creditCardBaseProductId}&quantity=${quantity}`;
+                        window.location.href = checkoutUrl; 
+                    } else {
+                        console.error('Error: Invalid quantity for credit card payment.');
+                    }
+                    break;
+            }
+        });
+
+        document.querySelectorAll('.close-modal-btn').forEach(button => button.addEventListener('click', () => {
+            window.__xHideModal(qrModal);
+            window.__xHideModal(bankTransferModal);
+        }));
+
+        if(modalCopyBtn) modalCopyBtn.addEventListener('click', () => {
+            copyToClipboard(accountNumberEl.innerText.replace(/-/g, ''), modalCopyFeedback);
+        });
+
+        // --- INITIAL RENDER ---
+        updateUI();
+    });
+    </script>
+</body>
+</html>
+index.html
